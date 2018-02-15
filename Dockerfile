@@ -1,23 +1,18 @@
-FROM registry.centos.org/sclo/python-27-centos7:latest
+FROM registry.centos.org/centos/python:latest
 
-ENV APP_ROOT /opt/app-root/src/matterllo
+RUN yum -y install git
 
-RUN mkdir $APP_ROOT && \
-    git clone https://github.com/Lujeni/matterllo.git $APP_ROOT && \
-    cd $APP_ROOT 
+RUN mkdir -p /opt/src/app
 
-USER root
+RUN cd /opt/src/app && git clone https://github.com/Lujeni/matterllo.git
+
+WORKDIR /opt/src/app/matterllo
 
 # Install all required Python modules
-RUN /opt/rh/python27/root/usr/bin/pip install --no-cache-dir -r $APP_ROOT/requirements_base.txt &&\
-    chmod -R 777 $APP_ROOT
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements_base.txt
 
-# Must set PYTHONPATH so 'import matterllo.utils' works
-ENV PYTHONPATH $APP_ROOT
+RUN python manage.py makemigrations
 
 EXPOSE 8080
 
-WORKDIR $APP_ROOT
-ADD entrypoint.sh $APP_ROOT
-
-ENTRYPOINT [ "bash", "entrypoint.sh" ]
+CMD python manage.py migrate && python manage.py runserver 0.0.0.0:8000
